@@ -58,5 +58,73 @@ tb_spread <- function(x, xstat){
   return(x)
 }
 
+build_csq <- function(varlist) {
+  var1 <- names(varlist[1])
+  tbl <- table(varlist[1], varlist[2])
+  pct <- prop.table(tbl)
+  pct_df <- data.frame(addmargins(pct))
+  df <- data.frame(addmargins(tbl))
+  
+  csq_test <- chisq.test(tbl)
+  
+  cell_csq <- (csq_test$observed - csq_test$expected)^2 / csq_test$expected
+  cell_df <- data.frame(addmargins(cell_csq))
+  
+  df <- cbind(df, pct_df[3], cell_df[3])
+  colnames(df) <- c("x1", "x2", "Frequency", "Percent", "ChiSq")
+  df <- df %>% mutate(Frequency = format(Frequency, big.mark=",")) %>% 
+    mutate(ChiSq = format(ChiSq, big.mark=",", digits = 1, scientific = FALSE)) %>%
+    mutate(Percent = sprintf("%.1f%%", 100*Percent)) 
+  
+  df <- df %>% mutate(x1 = if_else(x1 == "Sum", "TOTAL", as.character(x1))) %>% 
+    mutate(x2 = if_else(x2 == "Sum", "TOTAL", 
+                        as.character(x2)))
+  count <- tb_spread(df[1:3], "Frequency")
+  percent <- tb_spread(df[c(1:2,4)], "Percent")
+  chi <- tb_spread(df[c(1:2,5)], "ChiSq")
+  
+  newdf <- rbind(count,percent,chi) %>%
+    mutate(stat = as.factor(stat)) %>%
+    mutate(stat = fct_relevel(stat, "ChiSq", after = 2)) %>% 
+    arrange(x1, stat)
+  colnames(newdf) <- c(var1,"" , colnames(newdf)[3:length(newdf)])
+  
+  csqstat <- paste0("Chi-Square = " , newdf[nrow(newdf), ncol(newdf)], ",")
+  pval <- ifelse(csq_test$p.value > 0.001, 
+                 paste("=", format(csq_test$p.value, digits = 3, scientific = FALSE)), 
+                 "< 0.001")
+  new_row <- c(csqstat, paste("p-value", pval), rep("", ncol(newdf)-2))
+  newdf[2] <- as.character(newdf[[2]])
+  newdf2 <- rbind(newdf,new_row)
+  
+  return(newdf2)
+}
+
+pq_chisq <- function(varlist, tname = "Chi-Square Results"){
+  newdf <- build_csq(varlist)
+  varhead <- c("x" = 2, names(varlist[2]) = 5)
+  names(varhead) <- c(" ", names(varlist[2]))
+  tab_width <- length(newdf)
+  titlehead <- c(tname = tab_width)
+  names(titlehead) <- tname
+  al <- c("c", "l", rep("c", length(newdf) - 2))
+  out <- newdf2 %>% 
+    kable(align = al, booktabs=T) %>% 
+    kable_styling(full_width = FALSE, bootstrap_options = "condensed") %>% 
+    row_spec(0, extra_css = "border-bottom: solid thin;") %>%
+    column_spec(2, extra_css = "font-size: xx-small;") %>% 
+    add_header_above(header = varhead, 
+                     align = "c", extra_css = "border-top: solid thin; border-bottom: solid thin;") %>% 
+    add_header_above(header = titlehead, 
+                     align = "l", extra_css = "border-top: solid; border-bottom: double;") %>% 
+    row_spec(which(newdf[2] == "ChiSq"), 
+             extra_css = "border-bottom: solid thin; border-top: initial; vertical-align: middle; line-height: 6px;") %>%
+    row_spec(which(newdf[2] == "Frequency" | newdf[2] == "Percent"), 
+             extra_css = "border-top: initial; vertical-align: middle; line-height: 6px;") %>%
+    column_spec(1, bold=TRUE, extra_css = "border-bottom: solid thin;") %>%         
+    collapse_rows(columns = 1, valign = "middle")  %>% 
+    row_spec(nrow(newdf2), bold = T, extra_css = "border-bottom: solid; border-top: double; font-size: small;") 
+  return(out)
+}
 
 
