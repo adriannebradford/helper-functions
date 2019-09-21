@@ -79,7 +79,7 @@ pq_chisq <- function(varlist, tname = "Chi-Square Results"){
 }
 
 tb_spread <- function(x, xstat){
-  x <- x %>% spread(partyid_fct, xstat)
+  x <- x %>% spread(x2, xstat)
   x <- x %>% mutate(stat = xstat) %>% select(1, last_col(), 2:length(x))
   return(x)
 }
