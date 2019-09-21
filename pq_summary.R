@@ -102,8 +102,9 @@ build_csq <- function(varlist) {
 
 pq_chisq <- function(varlist, tname = "Chi-Square Results"){
   newdf <- build_csq(varlist)
-  varhead <- c("x" = 2, names(varlist[2]) = 5)
-  names(varhead) <- c(" ", names(varlist[2]))
+  topname <- names(varlist)[2]
+  varhead <- c("x" = 2, topname = 5)
+  names(varhead) <- c(" ", topname)
   tab_width <- length(newdf)
   titlehead <- c(tname = tab_width)
   names(titlehead) <- tname
