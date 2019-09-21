@@ -36,7 +36,9 @@ collect_tab <- function(varlist){
     return(df)
 }
 
-pq_summary <- function(name = "Summary Statistics", varlist){
+pq_summary <- function(tname = "Summary Statistics", varlist){
+    myHeader <- c(tname = 4)
+    names(myHeader) <- tname
     sumtab <- collect_tab(varlist)
     sumtab %>% kable(align="clrr") %>% 
         kable_styling(full_width = FALSE) %>% 
@@ -44,7 +46,7 @@ pq_summary <- function(name = "Summary Statistics", varlist){
         row_spec(which(sumtab$Category == "TOTAL"), bold = T, extra_css = "border-bottom: solid;") %>%
         column_spec(1, bold=TRUE, extra_css = "border-bottom: solid;") %>%         
         collapse_rows(columns = 1, valign = "middle") %>% 
-        add_header_above(c(name = 4), 
+        add_header_above(header = myHeader, 
                          align = "l", extra_css = "border-top: solid; border-bottom: double;")
     
 }
