@@ -37,7 +37,7 @@ collect_tab <- function(varlist){
 }
 
 pq_summary <- function(name = "Summary Statistics", varlist){
-    sumtab <- collect_tab(test)
+    sumtab <- collect_tab(varlist)
     sumtab %>% kable(align="clrr") %>% 
         kable_styling(full_width = FALSE) %>% 
         row_spec(0, extra_css = "border-bottom: solid thin;") %>% 
