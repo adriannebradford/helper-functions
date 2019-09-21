@@ -47,7 +47,8 @@ pq_summary <- function(tname = "Summary Statistics", varlist){
         column_spec(1, bold=TRUE, extra_css = "border-bottom: solid;") %>%         
         collapse_rows(columns = 1, valign = "middle") %>% 
         add_header_above(header = myHeader, 
-                         align = "l", extra_css = "border-top: solid; border-bottom: double;")
+                         align = "l", extra_css = "border-top: solid; border-bottom: double;") %>% 
+        row_spec(1:nrow(sumtab), extra_css = "line-height: 6px;")
     return(x)
 }
 
