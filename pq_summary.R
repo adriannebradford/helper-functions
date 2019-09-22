@@ -10,6 +10,7 @@ reorder_fct <- function(z){
   if ("TOTAL" %in% levels(z$x1)){
     z <- z %>% mutate(x1 = fct_relevel(x1, "TOTAL", after = Inf))
   }
+  print(levels(z$x2))
   if ("Other" %in% levels(z$x2)){
     z <- z %>% mutate(x2 = fct_relevel(x2, "Other", after = Inf))
   }
