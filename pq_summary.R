@@ -128,7 +128,7 @@ tb_spread <- function(x, xstat){
 pq_chisq <- function(varlist, tname = "Chi-Square Results"){
   
   newdf <- build_csq(varlist)
-  print(newdf)
+  #print(newdf)
   topname <- names(varlist)[2]
   tab_width <- length(newdf)
   varhead <- c("x" = 2, topname = tab_width - 2)
