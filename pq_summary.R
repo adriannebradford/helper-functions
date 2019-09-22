@@ -101,7 +101,7 @@ collect_tab <- function(varlist){
     return(df)
 }
 
-pq_summary <- function(tname = "Summary Statistics", varlist){
+pq_summary <- function(varlist, tname = "Summary Statistics"){
   myHeader <- c(tname = 4)
   names(myHeader) <- tname
     sumtab <- collect_tab(varlist)
