@@ -1,23 +1,74 @@
-reorder_fct <- function(z, num = 1){
+reorder_fct <- function(z){
   cn1 <-colnames(z)
   cn2 <-colnames(z)
-  for (i in 1:num){
-    cn2[i] <- "x"
-    colnames(z) <- cn2
-    tot <- z %>% filter(x == "TOTAL")
-    oth <- NULL
-    if (length(filter(z, x == "Other")) != 0){
-    oth <- z %>% filter(x== "Other")
-    z <- z %>% filter(x != "Other" & x != "TOTAL") %>% arrange(desc(Frequency))
-    }
-    else{
-    z <- z %>% filter(x != "TOTAL") %>% arrange(desc(Frequency))
-    }
+  cn2[1] <- "x1"
+  cn2[2] <- "x2"
+  colnames(z) <- cn2
+  if ("Other" %in% levels(z$x1)){
+    z <- z %>% mutate(x1 = fct_relevel(x1, "Other", after = Inf))
   }
-  z <- rbind(z, oth, tot)
+  if ("TOTAL" %in% levels(z$x1)){
+    z <- z %>% mutate(x1 = fct_relevel(x1, "TOTAL", after = Inf))
+  }
+  if ("Other" %in% levels(z$x2)){
+    z <- z %>% mutate(x2 = fct_relevel(x2, "Other", after = Inf))
+  }
+  z <- z %>% mutate(x2 = fct_relevel(x2, "TOTAL", after = Inf)) %>% 
+    arrange(x1,x2)
   colnames(z) <- cn1
+  
   return(z)
 }
+
+
+build_csq <- function(varlist) {
+  var1 <- names(varlist[1])
+  #print(levels(varlist[[1]]))
+  tbl <- table(varlist[[1]], varlist[[2]], useNA = "no")
+  pct <- prop.table(tbl)
+  pct_df <- data.frame(addmargins(pct))
+  df <- data.frame(addmargins(tbl))
+  #print(tbl)
+  csq_test <- chisq.test(tbl)
+  #print(csq_test)
+  cell_csq <- (csq_test$observed - csq_test$expected)^2 / csq_test$expected
+  cell_df <- data.frame(addmargins(cell_csq))
+  
+  df <- cbind(df, pct_df[3], cell_df[3])
+  colnames(df) <- c("x1", "x2", "Frequency", "Percent", "ChiSq")
+  df <- df %>% mutate(Frequency = format(Frequency, big.mark=",")) %>% 
+    mutate(ChiSq = format(ChiSq, big.mark=",", digits = 1, scientific = FALSE)) %>%
+    mutate(Percent = sprintf("%.1f%%", 100*Percent)) 
+  
+  df <- df %>% mutate(x1 = if_else(x1 == "Sum", "TOTAL", as.character(x1))) %>% 
+    mutate(x2 = if_else(x2 == "Sum", "TOTAL", 
+                        as.character(x2)))
+  df <- reorder_fct(df)
+  #print(df)
+  count <- tb_spread(df[1:3], "Frequency")
+  percent <- tb_spread(df[c(1:2,4)], "Percent")
+  chi <- tb_spread(df[c(1:2,5)], "ChiSq")
+  
+  newdf <- rbind(count,percent,chi) %>%
+    mutate(stat = as.factor(stat)) %>%
+    mutate(stat = fct_relevel(stat, "ChiSq", after = 2)) %>% 
+    arrange(x1, stat)
+  colnames(newdf) <- c(var1,"" , colnames(newdf)[3:length(newdf)])
+  #print(newdf[nrow(newdf), ncol(newdf)])
+  csqstat <- paste0("Chi-Square = " , newdf[nrow(newdf), ncol(newdf)], ",")
+  pval <- ifelse(csq_test$p.value > 0.001, 
+                 paste("=", format(csq_test$p.value, digits = 3, scientific = FALSE)), 
+                 "< 0.001")
+  new_row <- c(csqstat, paste("p-value", pval), rep("", ncol(newdf)-2))
+  #print(new_row)
+  newdf[1] <- as.character(newdf[[1]])
+  newdf[2] <- as.character(newdf[[2]])
+  newdf2 <- rbind(newdf,new_row)
+  #print(newdf2)
+  return(newdf2)
+}
+
+
 
 vartab <- function(var, vname){
     x <- table(var)
@@ -70,49 +121,7 @@ tb_spread <- function(x, xstat){
   return(x)
 }
 
-build_csq <- function(varlist) {
-  var1 <- names(varlist[1])
-  #print(levels(varlist[[1]]))
-  tbl <- table(varlist[[1]], varlist[[2]], useNA = "no")
-  pct <- prop.table(tbl)
-  pct_df <- data.frame(addmargins(pct))
-  df <- data.frame(addmargins(tbl))
-  #print(tbl)
-  csq_test <- chisq.test(tbl)
-  #print(csq_test)
-  cell_csq <- (csq_test$observed - csq_test$expected)^2 / csq_test$expected
-  cell_df <- data.frame(addmargins(cell_csq))
-  
-  df <- cbind(df, pct_df[3], cell_df[3])
-  colnames(df) <- c("x1", "x2", "Frequency", "Percent", "ChiSq")
-  df <- df %>% mutate(Frequency = format(Frequency, big.mark=",")) %>% 
-    mutate(ChiSq = format(ChiSq, big.mark=",", digits = 1, scientific = FALSE)) %>%
-    mutate(Percent = sprintf("%.1f%%", 100*Percent)) 
-  
-  df <- df %>% mutate(x1 = if_else(x1 == "Sum", "TOTAL", as.character(x1))) %>% 
-    mutate(x2 = if_else(x2 == "Sum", "TOTAL", 
-                        as.character(x2)))
-  #print(df)
-  count <- tb_spread(df[1:3], "Frequency")
-  percent <- tb_spread(df[c(1:2,4)], "Percent")
-  chi <- tb_spread(df[c(1:2,5)], "ChiSq")
-  
-  newdf <- rbind(count,percent,chi) %>%
-    mutate(stat = as.factor(stat)) %>%
-    mutate(stat = fct_relevel(stat, "ChiSq", after = 2)) %>% 
-    arrange(x1, stat)
-  colnames(newdf) <- c(var1,"" , colnames(newdf)[3:length(newdf)])
-  
-  csqstat <- paste0("Chi-Square = " , newdf[nrow(newdf), ncol(newdf)], ",")
-  pval <- ifelse(csq_test$p.value > 0.001, 
-                 paste("=", format(csq_test$p.value, digits = 3, scientific = FALSE)), 
-                 "< 0.001")
-  new_row <- c(csqstat, paste("p-value", pval), rep("", ncol(newdf)-2))
-  newdf[2] <- as.character(newdf[[2]])
-  newdf2 <- rbind(newdf,new_row)
-  #print(newdf2)
-  return(newdf2)
-}
+
 
 pq_chisq <- function(varlist, tname = "Chi-Square Results"){
   
@@ -142,3 +151,4 @@ pq_chisq <- function(varlist, tname = "Chi-Square Results"){
     row_spec(nrow(newdf), bold = T, extra_css = "border-bottom: solid; border-top: double; font-size: small;") 
   return(out)
 }
+
