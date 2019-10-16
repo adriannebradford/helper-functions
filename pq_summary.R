@@ -15,8 +15,7 @@ reorder_fct <- function(z){
   if ("Other" %in% levels(z$x2)){
     z <- z %>% mutate(x2 = fct_relevel(x2, "Other", after = Inf))
   }
-  z <- z %>% mutate(x2 = fct_relevel(x2, "TOTAL", after = Inf)) %>% 
-    arrange(x1,x2)
+  z <- z %>% mutate(x2 = fct_relevel(x2, "TOTAL", after = Inf)) 
   colnames(z) <- cn1
   
   return(z)
