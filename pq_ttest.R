@@ -202,3 +202,87 @@ pq_ttest_paired <- function(x1, x2, x1_desc, x2_desc, x_desc, tname = "Comparing
     return(out)
 }
 
+pq_nonparam <- function(data, dv, iv, dv_desc, iv_desc, tname = "Comparing the median of DV by IV", ...){
+    
+    y <- as.name(dv)
+    x <- as.name(iv)
+    
+    if ("paired" %in% names(list(...)) ){stop('use pq_ttest_paired instead')}
+    
+    else{
+        lvls <- unique(data[[iv]])
+        # print(lvls)
+        vec1 <- data %>% filter(UQ(rlang::sym(iv)) == lvls[1]) %>% .[[y]]
+        vec2 <- data %>% filter(UQ(rlang::sym(iv)) == lvls[2]) %>% .[[y]]
+        if (anyNA(vec1) | anyNA(vec2)){warning("WARNING - missing values have been omitted in calculation")}
+        vec1 <- vec1[!is.na(vec1)]
+        vec2 <- vec2[!is.na(vec2)]
+    }
+    
+    
+    
+    sv <- wilcox.test(vec1, vec2, paired = FALSE, ...)
+    
+    t = round(sv$statistic, 2)
+    pval <- ifelse(sv$p.value > 0.001, 
+                   format(sv$p.value, digits = 3, scientific = FALSE), 
+                   "<0.001")
+    
+    df <- data %>% 
+        group_by(UQ(rlang::sym(iv))) %>% 
+        summarize(M = mean(UQ(rlang::sym(dv)), na.rm = TRUE), SD = sd(UQ(rlang::sym(dv)), na.rm = TRUE)) %>% 
+        data.frame() %>%
+        `row.names<-`(.[, 1]) %>%
+        select(-1) %>%
+        t() %>%
+        data.frame() %>% 
+        `colnames<-`(lvls) %>% 
+        round(2) %>% 
+        rownames_to_column("stat") %>% 
+        mutate(dvar = dv_desc) %>% 
+        select(dvar, everything()) %>% 
+        mutate("W" = t, "p-value" = pval)
+    
+    titlehead <- c(tname = 6)
+    names(titlehead) <- tname
+    
+    varhead <- c("x" = 2, iv_desc = 2, "x" = 2)
+    names(varhead) <- c(" ", iv_desc, " ")
+    
+    len1 <- length(vec1)
+    len2 <- length(vec2)
+    
+    colgrp1 <- paste0(lvls[1],"\n(n = ",len1,")")
+    colgrp2 <- paste0(lvls[2],"\n(n = ",len2,")")
+    
+    colhead <- c("x" = 2, "lvl1" = 1, "lvl2" = 1, "W" = 1, "p-value" = 1 )
+    names(colhead) <- c(" ", colgrp1, colgrp2, "W", "p-value")
+    
+    out <- df %>% 
+        kable(align = "lrccc", booktabs=T) %>% 
+        kable_styling(full_width = FALSE, bootstrap_options = "condensed") %>% 
+        column_spec(5, width = "2cm")     %>% 
+        row_spec(2, extra_css = "border-top: none; border-bottom: solid;") %>% 
+        add_header_above(header = colhead, 
+                         align = "c", extra_css = "border-top: none; border-bottom: solid thin; vertical-align: middle; ") 
+    
+    out <- gsub('<th style="border-bottom:hidden" colspan="2"></th>', '<th style="border-bottom:solid thin" colspan="2"></th>', out)
+    
+    out <- out %>%     
+        add_header_above(header = varhead, 
+                         align = "c", extra_css = "border-top: solid thin; border-bottom: solid thin;") %>%
+        add_header_above(header = titlehead, 
+                         align = "l", extra_css = "border-top: solid; border-bottom: double;") %>% 
+        collapse_rows(columns = c(1,5,6), valign = "middle") %>% 
+        row_spec(2, extra_css = "border-bottom: solid;" ) 
+    
+    
+    out <- gsub('<th style="text.*</th>', "", out)
+    out <- gsub('<div style="border-bottom: 1px solid #ddd', '<div style="border-bottom: none', out)
+    out <- gsub('vertical-align: middle !important;" rowspan="2"', 
+                'vertical-align: middle !important; border-bottom: solid" rowspan="2"', out)
+    
+    out <- gsub('margin-right: auto;', 'margin-right: auto;padding:20px;', out)
+    
+    return(out)
+}
