@@ -2,14 +2,9 @@ library(tidyverse)
 library(kableExtra)
 library(magrittr)
 
-data("ChickWeight")
-
-a1 <- aov(weight ~ Diet * Time, data = ChickWeight)
-
-
 pq_anova <- function(x, tname = "ANOVA Table"){
 
-    x <- summary(a1)
+    x <- summary(x)
     rows <- rownames(x[[1]])
     x %<>% .[[1]]
     
@@ -52,4 +47,4 @@ pq_anova <- function(x, tname = "ANOVA Table"){
     return(out)
 }
 
-pq_anova(a1, "ANOVA Chick Weights")
+
