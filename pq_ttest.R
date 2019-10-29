@@ -230,7 +230,7 @@ pq_nonparam <- function(data, dv, iv, dv_desc, iv_desc, tname = "Comparing the m
     
     df <- data %>% 
         group_by(UQ(rlang::sym(iv))) %>% 
-        summarize(M = mean(UQ(rlang::sym(dv)), na.rm = TRUE), SD = sd(UQ(rlang::sym(dv)), na.rm = TRUE)) %>% 
+        summarize(MED = median(UQ(rlang::sym(dv)), na.rm = TRUE), IQR = IQR(UQ(rlang::sym(dv)), na.rm = TRUE)) %>% 
         data.frame() %>%
         `row.names<-`(.[, 1]) %>%
         select(-1) %>%
