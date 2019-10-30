@@ -61,8 +61,14 @@ pq_ttest <- function(data, dv, iv, dv_desc, iv_desc, tname = "Comparing the mean
     if ("paired" %in% names(list(...)) ){stop('use pq_ttest_paired instead')}
     
     else{
-        lvls <- unique(data[[iv]])
-        # print(lvls)
+        if (class(data[[iv]]) == "factor"){
+            lvls <- levels(data[[iv]])
+        }
+        else{
+        lvls <- levels(factor(data[[iv]]))
+        }
+        #print(class(factor(data[[iv]])))
+  #     print(lvls)
         vec1 <- data %>% filter(UQ(rlang::sym(iv)) == lvls[1]) %>% .[[y]]
         vec2 <- data %>% filter(UQ(rlang::sym(iv)) == lvls[2]) %>% .[[y]]
         if (anyNA(vec1) | anyNA(vec2)){warning("WARNING - missing values have been omitted in calculation")}
@@ -210,8 +216,13 @@ pq_nonparam <- function(data, dv, iv, dv_desc, iv_desc, tname = "Comparing the m
     if ("paired" %in% names(list(...)) ){stop('use pq_ttest_paired instead')}
     
     else{
-        lvls <- unique(data[[iv]])
-        # print(lvls)
+        if (class(data[[iv]]) == "factor"){
+            lvls <- levels(data[[iv]])
+        }
+        else{
+            lvls <- levels(factor(data[[iv]]))
+        }
+
         vec1 <- data %>% filter(UQ(rlang::sym(iv)) == lvls[1]) %>% .[[y]]
         vec2 <- data %>% filter(UQ(rlang::sym(iv)) == lvls[2]) %>% .[[y]]
         if (anyNA(vec1) | anyNA(vec2)){warning("WARNING - missing values have been omitted in calculation")}
